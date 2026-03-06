@@ -39,7 +39,7 @@ export default function Home() {
     return ( 
         <div className="flex flex-col min-h-screen">
 
-            <div className="basis-0 grow pb-8 justify-center decoration-amber-50 bg-radial from-sky-950 to-black pt-4 px-4">
+            <div className="basis-0 grow pb-8 justify-center decoration-amber-50 bg-radial from-sky-950 to-black pt-8 px-4">
 
                 <h1 className="text-center text-4xl mb-20 text-shadow-xl font-bold">
                     Select an Escape Room
