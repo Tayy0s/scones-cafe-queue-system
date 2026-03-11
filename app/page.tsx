@@ -20,7 +20,7 @@ type Room = {
 const rooms: Room[] = [
     {
         title: "Museum Heist", 
-        description: "sex with lim qi ",
+        description: "Reallyreallylongdescription\nwithnewlines\nin it\nraelly ling discriotn ! \n reall ylong description \n really long descrtitn! verticall y and horzioyalntally\n wowowowoowow womimkuki,miju \n miumokumoku \n mokou wwowoow!! ikumiukmikumi \ntetotetotetotetotetotetotetotetote\n",
         imageUrl: "/images/placeholder.png"
     },
     {
@@ -37,7 +37,7 @@ const rooms: Room[] = [
 
 export default function Home() {
     return ( 
-        <div className="flex flex-col min-h-screen">
+        <div className="flex flex-col min-h-screen min-w-80">
 
             <div className="basis-0 grow pb-8 justify-center decoration-amber-50 bg-radial from-sky-950 to-black pt-8 px-4">
 
@@ -48,7 +48,11 @@ export default function Home() {
                 <section className="flex flex-wrap items-center justify-center gap-10">
                     {
                         rooms.map((room, index) => (
-                            <Card key={index} title={room.title} description={room.description} imageUrl={room.imageUrl}></Card>
+                            <Card key={index}
+                                  title={room.title} 
+                                  description={room.description}
+                                  imageUrl={room.imageUrl}
+                            />
                         ))
                     }
                 </section>
