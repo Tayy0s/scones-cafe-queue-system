@@ -37,9 +37,9 @@ const rooms: Room[] = [
 
 export default function Home() {
     return ( 
-        <div className="flex flex-col min-h-screen min-w-80">
+        <div className="flex flex-col min-h-screen min-w-80 bg-radial from-sky-950 to-black">
 
-            <div className="basis-0 grow pb-8 justify-center decoration-amber-50 bg-radial from-sky-950 to-black pt-8 px-4">
+            <div className="grow pb-8 justify-center decoration-amber-50 pt-8 px-4">
 
                 <h1 className="text-center text-4xl mb-20 text-shadow-xl font-bold">
                     Select an Escape Room
@@ -60,12 +60,7 @@ export default function Home() {
 
             </div>
 
-            {/* please try to not make this a flex box */}
-            {/* and also try to take the footer out of div to prevent over nesting */}
-            {/* basically transform to <Footer className="flex flex-col"> */}
-            <div className="flex flex-col">
-                <Footer/>
-            </div>
+            <Footer/>
 
         </div>
     );
