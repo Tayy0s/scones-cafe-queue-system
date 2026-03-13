@@ -2,7 +2,6 @@ import crypto from "node:crypto";
 import { Redis } from "@upstash/redis";
 
 type AuthorizedUser = {
-    username: string,
     passwordHash: string,
     salt: string
 };
@@ -15,20 +14,21 @@ function generatePasswordHash(password: string, salt: string) : string{
 }
 
 export class AdminAuth {
-    authorizedUsers : AuthorizedUser[] = [];
+    authorizedUsers: AuthorizedUser[] = [];
     authorizedSessions: string[] = [];
     redis: Redis = Redis.fromEnv();
+    redisPrefix: string;
 
-    constructor() {
-        (async () => {
-            this.redis.incr("counter");
-        })();
+    constructor(redisPrefix: string = "") {
+        this.redisPrefix = redisPrefix;
+
+        if (redisPrefix !== "") this.redisPrefix += "_"
     }
 
 
-    verifyLogin(username: string, password: string) : boolean {
-        const user = this.authorizedUsers.find(u => u.username === username);
-        if (!user) return false;
+    async verifyLogin(username: string, password: string) : Promise<boolean> {
+        const user: AuthorizedUser | null = await this.redis.hget(this.redisPrefix + "users", "username");
+        if (user === null) return false;
 
         let remotePasswordHash = generatePasswordHash(password, user.salt);
         
@@ -36,10 +36,10 @@ export class AdminAuth {
     }
 
     // horrible function name
-    tryLogin(username: string, password: string) : string | undefined {
-        if (this.verifyLogin(username, password)) {
+    async tryLogin(username: string, password: string) : Promise<string | undefined> {
+        if (await this.verifyLogin(username, password)) {
             const sessionToken = Buffer.from(crypto.randomBytes(24)).toString("base64");
-            this.authorizedSessions.push(sessionToken);
+            await this.redis.sadd(this.redisPrefix + "sessions", sessionToken);
 
             return sessionToken;
         }
@@ -47,11 +47,8 @@ export class AdminAuth {
 
     // probably need to rename the variables "session", "auth_token" and
     // "sessionToken" to one unified name for clarity
-    isSessionAuthorized(session: string) : boolean {
-        for (let i = 0; i < this.authorizedSessions.length; i++) {
-            console.log(`${session} == ${this.authorizedSessions[i]}`);
-        }
-        return this.authorizedSessions.some(s => s == session);
+    async isSessionAuthorized(session: string) : Promise<boolean> {
+        return await this.redis.sismember(this.redisPrefix + "sessions", session) == 1
     }
 
 };
