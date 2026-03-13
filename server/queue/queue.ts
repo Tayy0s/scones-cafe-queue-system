@@ -1,132 +1,164 @@
-import { isNumeric, emailAddrCheck } from "../utils";
-
-import fs from "node:fs";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 
-type QueueDetails = {
-    email: string | null,
-    phone_number: string | null,
-    auth_token: string,
-    time_joined: string,
+export enum QueueStatus {
+    NOT_IN_QUEUE,
+    IN_QUEUE,
+    SERVED
+}
+
+export type QueueEntry = {
+    uuid: string,
+    time_added: string,
 };
 
-enum QueueStatus {
-    SERVED,
-    IN_QUEUE,
-    NOT_IN_QUEUE,
-    NOW_SERVING
-}
-
 export class Queue {
-    queueList: QueueDetails[];
-    servedQueueList: QueueDetails[];
-    escapeRoomNumber: number;
+    entries: QueueEntry[] = [];
+    pastEntries: QueueEntry[] = [];
 
-    constructor(queueList: QueueDetails[], servedQueueList: QueueDetails[], escapeRoomNumber: number) {
-        this.queueList = queueList;
-        this.servedQueueList = servedQueueList;
-        this.escapeRoomNumber = escapeRoomNumber;
-    };
-    
-    async enqueue(phoneNum: string | null, emailAddr: string | null, auth_token: string) : Promise<string | boolean> {
-        // Input Validation
-        if (phoneNum != null)
-            if (phoneNum.length != 8 || !isNumeric(phoneNum))
-                return false;
-        
-        if (emailAddr != null)
-            if (!emailAddrCheck.test(emailAddr))
-                return false;
+    enqueue(uuid?: string) : QueueEntry {
+        if (uuid === undefined)
+            uuid = randomUUID().toString();
 
-        const authToken: string = randomUUID().toString();
+        const newQueueEntry: QueueEntry = {
+            uuid: uuid,
+            time_added: new Date().toDateString()
+        };
 
-        for (let queueDetail of this.queueList)
-            if (queueDetail.auth_token === auth_token)
-                return false; 
-        
-        const newQueueEntry: QueueDetails = {
-            email: emailAddr,
-            phone_number: phoneNum,
-            auth_token: authToken,
-            time_joined: new Date().toDateString()
-        }
-        
-        this.queueList.push(newQueueEntry)
-        this.saveQueue();
-        return authToken
+        this.entries.push(newQueueEntry);
+
+        return newQueueEntry;
     }
 
-    async dequeue(authToken: string) : Promise<Boolean> {
-        for (let i = 0; i < this.queueList.length; i++) {
-            if (this.queueList[i].auth_token === authToken) {
-                this.servedQueueList.push(this.queueList[i]);
-                this.queueList.splice(i, 1);
-                this.saveQueue();
-                return true;
+    dequeue(uuid: string) : QueueEntry | undefined {
+        for (let i = 0; i < this.entries.length; i++) {
+            if (this.entries[i].uuid === uuid) {
+                let dequeuedElement = this.entries.splice(i, 1)[0];
+                this.pastEntries.push(dequeuedElement);
+                return dequeuedElement;
             }
         }
-        return false;
     }
 
-    async getQueueStatus(authToken: string) : Promise<any> {
-        for (let i = 0; i < this.queueList.length; i++) {
-            if (this.queueList[i].auth_token === authToken) {
-                if (i == 0) return { queue_status: QueueStatus.NOW_SERVING};
-                return { queue_status: QueueStatus.IN_QUEUE, people_ahead: i };
+    get(uuid: string) : QueueEntry | undefined {
+        return this.entries.find(value => value.uuid == uuid);
+    }
+
+
+    dequeueFirst() : QueueEntry | undefined {
+        let dequeuedElement = this.entries.shift();
+
+        if (dequeuedElement !== undefined)
+            this.pastEntries.push(dequeuedElement);
+
+        return dequeuedElement;
+    }
+
+    getFirst() : QueueEntry | undefined {
+        return this.entries[0];
+    }
+
+    getQueueStatus(uuid: string) : { status: QueueStatus, people_ahead?: number } {
+        for (let i = 0; i < this.entries.length; i++) {
+            if (this.entries[i].uuid === uuid) {
+                return { status: QueueStatus.IN_QUEUE, people_ahead: i };
             }
         }
 
-        // Check served people
-        for (let i = 0; i < this.servedQueueList.length; i++)
-            if (this.servedQueueList[i].auth_token === authToken)
-                return QueueStatus.SERVED;
+        for (let i = 0; i < this.pastEntries.length; i++) {
+            if (this.pastEntries[i].uuid === uuid) {
+                return { status: QueueStatus.SERVED };
+            }
+        }
 
-        return QueueStatus.NOT_IN_QUEUE;
+        return { status: QueueStatus.NOT_IN_QUEUE };
     }
-    
-    saveQueue() : void {
-        const queueListStr: string = JSON.stringify(this.queueList);
-        const queueServedStr: string = JSON.stringify(this.servedQueueList);
-
-        const filePathQueueList = path.join("../data", `E${this.escapeRoomNumber}-queue-list.json`);
-        const filePathServedList = path.join("../data", `E${this.escapeRoomNumber}-queue-served-list.json`);
-        
-        fs.writeFile(filePathQueueList, queueListStr, (err) => {
-            if (err) {
-                console.error(err);
-            } else {
-                console.log("Saved queue successully!")
-            }
-        });
-
-        fs.writeFile(filePathServedList, queueServedStr, (err) => {
-            if (err) {
-                console.error(err.message);
-            } else {
-                console.log("Saved served queue successully!")
-            }
-        });
-    };
-
-    loadQueue() : void {
-        const filePathQueueList = path.join("../data", `E${this.escapeRoomNumber}-queue-list.json`);
-        const filePathServedList = path.join("../data", `E${this.escapeRoomNumber}-queue-served-list.json`);
-
-        fs.readFile(filePathQueueList, { encoding: 'utf8' } ,  (err, data) => {
-            if (err) {
-                console.error(err.message);
-            } else {
-                this.queueList = JSON.parse(data);
-            }
-        });
-
-        fs.readFile(filePathServedList, { encoding: 'utf8' } ,  (err, data) => {
-            if (err) {
-                console.error(err.message);
-            } else {
-                this.servedQueueList = JSON.parse(data);
-            }
-        });
-    };
 }
+
+// horrible class name
+export class UniqueQueueArray {
+    queues: Queue[] = []
+
+    constructor(initialQueueCount: number = 0) {
+        console.log("I am unique queue array constructor");
+        for (let i = 0; i < initialQueueCount; i++)
+            this.queues.push(new Queue());
+    }
+
+    // horrible function name, horrible api. please redesign
+    getQueueContainingUuid(uuid: string) : Queue | undefined {
+        return this.queues.find(queue => queue.getQueueStatus(uuid).status === QueueStatus.IN_QUEUE);
+    }
+
+    // ditto
+    getQueueNumberContainingUuid(uuid: string) : number | undefined {
+        for (let i = 0; i < this.queues.length; i++) {
+            if (this.queues[i].getQueueStatus(uuid).status === QueueStatus.IN_QUEUE)
+                return i;
+        }
+        return undefined;
+    }
+
+    enqueue(room: number, uuid?: string) : QueueEntry | undefined {
+        room = Math.floor(room);
+        if (room < 0 || room >= this.queues.length)
+            return undefined;
+
+        if (uuid !== undefined) {
+            for (let queue of this.queues)
+                if (queue.getQueueStatus(uuid).status == QueueStatus.IN_QUEUE)
+                    return undefined;
+
+            return this.queues[room].enqueue(uuid);
+        }
+    }
+
+    dequeue(uuid: string) : QueueEntry | undefined {
+        let queue = this.getQueueContainingUuid(uuid);
+
+        if (queue !== undefined)
+            return queue.dequeue(uuid);
+    }
+
+    get(uuid: string) : QueueEntry | undefined {
+        for (let i = 0; i < this.queues.length; i++) {
+            let possibleEntry = this.queues[i].get(uuid);
+
+            if (possibleEntry !== undefined)
+                return possibleEntry;
+        }
+    }
+
+    dequeueFirst(room: number) : QueueEntry | undefined {
+        room = Math.floor(room);
+        if (room < 0 || room >= this.queues.length)
+            return undefined;
+
+        return this.queues[room].dequeueFirst();
+    }
+
+    getFirst(room: number) : QueueEntry | undefined {
+        room = Math.floor(room);
+        if (room < 0 || room >= this.queues.length)
+            return undefined;
+
+        return this.queues[room].getFirst();
+    }
+
+    deserialize(data: string) {
+        let obj = JSON.parse(data);
+        if (Object.hasOwn(obj, "queues"))
+            this.queues = structuredClone(obj["queues"]);
+    }
+
+    serialize() : string {
+        let data = JSON.stringify(this);
+        return data;
+    }
+
+}
+
+// TODO: turn 3 into a configured variable. maybe roomsconfig.json or something.
+// since this file is only about queues, maybe extract the singleton into another file
+// which also handles loading from a file
+let singletonQueues = new UniqueQueueArray(3);
+export { singletonQueues };

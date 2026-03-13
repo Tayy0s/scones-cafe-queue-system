@@ -1,44 +1,31 @@
 import { NextResponse, NextRequest } from "next/server";
-// import { joinQueue, leaveQueue, getQueue } from "@/server/queue/queue";
+import { singletonQueues } from "@/server/queue/queue";
+import { cookies } from 'next/headers'
 
 export async function GET(request: NextRequest) {
-/*
-    let searchParams = request.nextUrl.searchParams;
-    let auth_token = searchParams.get("auth_token");
+    let queueToken = request.cookies.get("queue_token")?.value;
 
-    let result = await getQueue(auth_token!);
+    let errMsg = "Required cookie missing: queue_token";
 
-    return NextResponse.json({message: result ?? "what the happen rhymes with max verstappen"}); 
-    */
-   return NextResponse.json({message: "test"})
-}
+    if (queueToken) {
+        let room = singletonQueues.getQueueNumberContainingUuid(queueToken);
 
-export async function POST(request: NextRequest) {
-/*
-    // For joining
+        if (room !== undefined) {
+            let queue = singletonQueues.queues[room];
+            let status = queue.getQueueStatus(queueToken);
 
-    console.log(request.nextUrl.searchParams);
-    let searchParams = request.nextUrl.searchParams;
-    let email = searchParams.get("email");
-    let phone = searchParams.get("phone");
+            return NextResponse.json({
+                success: true,
+                message: "Success",
+                data: {
+                    room: room,
+                    queueStatus: status
+                }
+            });
+        }
 
-    let result = await joinQueue(phone, email);
+        errMsg = "Not in queue";
+    }
 
-    return NextResponse.json({message: result ?? "Couldn't join queue"});
-    */
-   return NextResponse.json({message: "test"})
-}
-
-export async function DELETE(request: NextRequest) {
-/*
-    // For leaving (wtf)
-
-    let searchParams = request.nextUrl.searchParams;
-    let auth_token = searchParams.get("auth_token");
-
-    let result = await leaveQueue(auth_token!);
-
-    return NextResponse.json({message: result});
-    */
-   return NextResponse.json({message: "test"})
+    return NextResponse.json({ success: false, message: errMsg }, { status: 404 });
 }
