@@ -38,6 +38,29 @@ export async function GET(request: NextRequest) {
         });
     }
 
+	if (resource == "queue_length") {
+		const room = params.get("room");
+		if (room === null) {
+			return NextResponse.json({
+				success: false,
+				message: "Missing parameter: room"
+			}, { status: 400 });
+		}
+
+		const roomNum = parseInt(room);
+		if (isNaN(roomNum) || roomNum < 0 || roomNum >= singletonQueues.queues.length) {
+			return NextResponse.json({
+				success: false,
+				message: "Invalid parameter: room"
+			}, { status: 400 });
+		}
+
+		return NextResponse.json({
+			success: true,
+			data: await singletonQueues.queues[roomNum].length()
+		});
+	}
+
     return NextResponse.json({
         success: false,
         message: "Missing or invalid parameter: resource" 

@@ -24,11 +24,11 @@ export class Queue {
 
     async enqueue(uuid?: string) : Promise<QueueEntry> {
         if (uuid === undefined)
-            uuid = randomUUID().toString();
+            uuid = randomUUID().toString()
 
         const newQueueEntry: QueueEntry = {
             uuid: uuid,
-            time_added: new Date().toDateString(),
+            time_added: new Date().toString(),
         };
 
         const rp = this.redisPrefix;
@@ -47,8 +47,6 @@ export class Queue {
 
         try {
             const pos = await redis.lpos(`$${rp}entries_uuid`, uuid);
-            console.log("HERE IS POS");
-            console.log(pos);
             if (pos === null)
                 return undefined;
 
@@ -102,7 +100,6 @@ export class Queue {
             const date = await redis.lmove(`${rp}entries_date`, `${rp}pastEntries_date`, "left", "right");
 
             if (uuid === null || date === null) {
-                console.log("No more");
                 return undefined;
             }
 
