@@ -1,7 +1,8 @@
 'use client';
 
 import Card from '@/components/Card';
-import { QueueStatus } from '@/server/queue';
+import QRCodeWindow from '@/components/QRCodeWindow';
+import { QueueEntry, QueueStatus } from '@/server/queue';
 import { useRef, useEffect, useState, ReactNode } from 'react';
 
 type Room = {
@@ -35,6 +36,7 @@ function multiple(generator: (index: number) => React.ReactNode, count: number) 
 
 function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLength?: number }) {
 	const [queueLength, setQueueLength] = useState(initialQueueLength ?? -1);
+	const [qrcode_url, setQrCodeUrl] = useState("");
 
 	if (queueLength == -1) {
 		fetch(`/api/admin?resource=queue_length&room=${room}`).then(async v => {
@@ -60,13 +62,16 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 				})
 			});
 
-			const json: { success: boolean, message?: string, data?: QueueStatus } = await result.json();
+			const json: { success: boolean, message?: string, data?: QueueEntry } = await result.json();
 			
 			if (json.success) {
 				setQueueLength(n => n + 1);
 			}
 
 			alert(JSON.stringify(json, undefined, 4));
+			
+			if (json.data != undefined)
+				setQrCodeUrl(json.data.uuid);
 		}
 	};
 
@@ -90,6 +95,8 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 		}
 	};
 
+
+
 	return (
 		<div className="flex flex-col gap-2 p-3 max-w-120 outline outline-zinc-800 rounded-lg">
 			<div className="w-full flex items-center justify-between gap-4">
@@ -107,7 +114,6 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 					</button>
 				</div>
 			</div>
-
 			<span className="w-full font-extralight text-zinc-500 text-sm text-left">{queueLength} in queue</span>
 		</div>
 	);
