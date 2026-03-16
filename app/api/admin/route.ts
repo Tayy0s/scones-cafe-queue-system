@@ -1,14 +1,12 @@
 import { NextResponse, NextRequest } from "next/server";
-import { redirect, RedirectType } from 'next/navigation'
 import { cookies } from 'next/headers';
-import { adminAuthSingleton } from "@/server/adminAuth";
-import { singletonQueues } from "@/server/queue";
-import crypto from "node:crypto";
+import { AuthSingleton } from "@/server/auth";
+import { Queues } from "@/server/queue";
 
 export async function GET(request: NextRequest) {
     const authToken: string | undefined = (await cookies()).get("auth_token")?.value;
     
-    if (authToken === undefined || await adminAuthSingleton.isSessionAuthorized(authToken) == false)
+    if (authToken === undefined || await AuthSingleton.isSessionAuthorized(authToken) == false)
         return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
 
     const params = request.nextUrl.searchParams;
@@ -20,10 +18,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Missing parameter: room" }, { status: 400 });
 
         const roomNum = parseInt(room);
-        if (isNaN(roomNum) || roomNum < 0 || roomNum >= singletonQueues.queues.length)
+        if (isNaN(roomNum) || roomNum < 0 || roomNum >= Queues.queues.length)
             return NextResponse.json({ success: false, message: "Invalid parameter: room" }, { status: 400 });
 
-        const result = await singletonQueues.queues[roomNum].length();
+        const result = await Queues.queues[roomNum].length();
 
         return NextResponse.json({
             success: true,
@@ -34,7 +32,7 @@ export async function GET(request: NextRequest) {
     if (resource == "num_queues") {
         return NextResponse.json({
             success: true,
-            data: singletonQueues.queues.length
+            data: Queues.queues.length
         });
     }
 
@@ -48,7 +46,7 @@ export async function GET(request: NextRequest) {
 		}
 
 		const roomNum = parseInt(room);
-		if (isNaN(roomNum) || roomNum < 0 || roomNum >= singletonQueues.queues.length) {
+		if (isNaN(roomNum) || roomNum < 0 || roomNum >= Queues.queues.length) {
 			return NextResponse.json({
 				success: false,
 				message: "Invalid parameter: room"
@@ -57,7 +55,7 @@ export async function GET(request: NextRequest) {
 
 		return NextResponse.json({
 			success: true,
-			data: await singletonQueues.queues[roomNum].length()
+			data: await Queues.queues[roomNum].length()
 		});
 	}
 
@@ -70,7 +68,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     const authToken: string | undefined = (await cookies()).get("auth_token")?.value;
     
-    if (authToken === undefined || await adminAuthSingleton.isSessionAuthorized(authToken) == false)
+    if (authToken === undefined || await AuthSingleton.isSessionAuthorized(authToken) == false)
         return NextResponse.json({ success: false, message: 'Forbidden' }, { status: 403 });
 
     let json = undefined;
@@ -98,14 +96,14 @@ export async function POST(request: NextRequest) {
             }
 
             const roomNum = parseInt(room);
-            if (isNaN(roomNum) || roomNum < 0 || roomNum >= singletonQueues.queues.length) {
+            if (isNaN(roomNum) || roomNum < 0 || roomNum >= Queues.queues.length) {
                 return NextResponse.json({
                     success: false,
                     message: "Invalid room" 
                 }, { status: 400 });
             }
 
-            const result = await singletonQueues.dequeueFirst(roomNum);
+            const result = await Queues.dequeue(roomNum);
             if (result === undefined) {
                 return NextResponse.json({
                     success: false,
@@ -130,14 +128,14 @@ export async function POST(request: NextRequest) {
             }
 
             const roomNum = parseInt(room);
-            if (isNaN(roomNum) || roomNum < 0 || roomNum >= singletonQueues.queues.length) {
+            if (isNaN(roomNum) || roomNum < 0 || roomNum >= Queues.queues.length) {
                 return NextResponse.json({
                     success: false,
                     message: "Invalid room" 
                 }, { status: 400 });
             }
 
-            const result = await singletonQueues.enqueue(roomNum);
+            const result = await Queues.enqueue(roomNum);
             if (result === undefined) {
                 return NextResponse.json({
                     success: false,

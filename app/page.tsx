@@ -3,7 +3,7 @@ import localFont from "next/font/local";
 import Card from "@/components/Card";
 import Footer from "@/components/Footer";
 import { cookies, headers } from "next/headers";
-import { singletonQueues } from "@/server/queue";
+import { Queues } from "@/server/queue";
 import ClientPage from "./ClientPage";
 
 export default async function Home({ searchParams } : { searchParams: Promise<any> } ) {
@@ -14,7 +14,7 @@ export default async function Home({ searchParams } : { searchParams: Promise<an
     const paramQueueToken = sp["q"];
     const cookieQueueToken = cookieStore.get("queue_token")?.value;
 
-    if (paramQueueToken && await singletonQueues.get(paramQueueToken) !== undefined) {
+    if (paramQueueToken && await Queues.get(paramQueueToken) !== undefined) {
 
         const twodays = 2 * 86400 * 1000;
         cookieStore.set("queue_token", paramQueueToken, {
@@ -25,7 +25,7 @@ export default async function Home({ searchParams } : { searchParams: Promise<an
 
     } else if (cookieQueueToken) {
 
-        if (await singletonQueues.get(cookieQueueToken) !== undefined) {
+        if (await Queues.get(cookieQueueToken) !== undefined) {
             inQueue = true;
         } else {
             cookieStore.delete("queue_token");

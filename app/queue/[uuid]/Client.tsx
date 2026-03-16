@@ -1,9 +1,5 @@
 "use client";
 
-import Image from "next/image";
-import localFont from "next/font/local";
-import Card from "@/components/Card";
-import Footer from "@/components/Footer";
 import QrCode from "qrcode";
 import InQueue from "./InQueue";
 import Served from "./Served"

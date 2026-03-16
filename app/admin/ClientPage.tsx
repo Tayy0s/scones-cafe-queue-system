@@ -1,11 +1,10 @@
 'use client';
 
-import Card from '@/components/Card';
-import QRCodeWindow from '@/components/QRCodeWindow';
+
 import { QueueEntry, QueueStatus } from '@/server/queue';
-import { redirect } from 'next/dist/server/api-utils';
 import { useRef, useEffect, useState, ReactNode } from 'react';
 import LogoutIcon from '@/components/LogoutIcon';
+import Modal from "@/components/Modal";
 
 type Room = {
 	title: string,
@@ -24,7 +23,7 @@ const rooms: Room[] = [
 	{
 		title: "Who Cracked Dumpty? 🥚",
 		imageUrl: "/images/placeholder.png"
-	}, // TODO: Ask lim for escape room image
+	},
 ]
 
 function multiple(generator: (index: number) => React.ReactNode, count: number) {
@@ -36,7 +35,9 @@ function multiple(generator: (index: number) => React.ReactNode, count: number) 
 
 function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLength?: number }) {
 	const [queueLength, setQueueLength] = useState(initialQueueLength ?? -1);
-	const [qrcode_url, setQrCodeUrl] = useState("");
+	const [qrCodeUrl, setQrCodeUrl] = useState("");
+	const [showEnqueueConfirm, setShowEnqueueConfirm] = useState(false);
+	const [showDequeueConfirm, setShowDequeueConfirm] = useState(false);
 
 	if (queueLength == -1) {
 		fetch(`/api/admin?resource=queue_length&room=${room}`).then(async v => {
@@ -53,52 +54,58 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 	}
 
 	const enqueueButtonAction = async () => {
-		if (confirm(`Are you sure you want to enqueue for room ${room}?`)) {
-			const result = await fetch("/api/admin", {
-				method: "POST",
-				body: JSON.stringify({
-					method: "enqueue",
-					room: room
-				})
-			});
+		const result = await fetch("/api/admin", {
+			method: "POST",
+			body: JSON.stringify({
+				method: "enqueue",
+				room: room
+			})
+		});
 
-			const json: { success: boolean, message?: string, data?: QueueEntry } = await result.json();
-			
-			if (json.success) {
-				setQueueLength(n => n + 1);
-			}
-
-			alert(JSON.stringify(json, undefined, 4));
-			
-			if (json.data != undefined) // Redirect to queue qr code for customers to scan
-				window.location.href = window.location.href.substring(0, -5) + `queue/${json.data?.uuid}?roomName=${rooms[room].title}`;
+		const json: { success: boolean, message?: string, data?: QueueEntry } = await result.json();
+		
+		if (json.success) {
+			setQueueLength(n => n + 1);
 		}
+
+		alert(JSON.stringify(json, undefined, 4));
+		
+		if (json.data != undefined) // Redirect to queue qr code for customers to scan
+			window.location.href = window.location.href.substring(0, -5) + `queue/${json.data?.uuid}?roomName=${rooms[room].title}`;
 	};
 
 	const dequeueButtonAction = async () => {
-		if (confirm(`Are you sure you want to dequeue for room ${room}?`)) {
-			const result = await fetch("/api/admin", {
-				method: "POST",
-				body: JSON.stringify({
-					method: "dequeue",
-					room: room
-				})
-			});
+		const result = await fetch("/api/admin", {
+			method: "POST",
+			body: JSON.stringify({
+				method: "dequeue",
+				room: room
+			})
+		});
 
-			const json: { success: boolean, message?: string, data?: QueueStatus } = await result.json();
-			
-			if (json.success) {
-				setQueueLength(n => n - 1);
-			}
-
-			alert(JSON.stringify(json, undefined, 4));
+		const json: { success: boolean, message?: string, data?: QueueStatus } = await result.json();
+		
+		if (json.success) {
+			setQueueLength(n => n - 1);
 		}
+
+		alert(JSON.stringify(json, undefined, 4));
 	};
 
 
 
 	return (
 		<div className="w-full flex justify-center">
+			<Modal
+				actionText="add person to queue"
+				state={[showEnqueueConfirm, setShowEnqueueConfirm]}
+				callback={enqueueButtonAction}
+			/>
+			<Modal
+				actionText="call person from queue"
+				state={[showDequeueConfirm, setShowDequeueConfirm]}
+				callback={dequeueButtonAction}
+			/>
 			<div className="grow flex flex-col gap-2 p-3 max-w-150 outline outline-zinc-800 rounded-lg">
 				<div className="w-full flex items-center justify-between gap-4">
 					
@@ -107,11 +114,11 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 					</h1>
 					
 					<div className="flex gap-4 max-w-max">
-						<button className="basis-full px-2 py-2 max-w-max rounded-lg outline outline-zinc-800 bg-green-500/30 hover:bg-green-500/35 ease-in-out" onClick={enqueueButtonAction}>
+						<button className="basis-full px-2 py-2 max-w-max rounded-lg outline outline-zinc-800 bg-green-500/30 hover:bg-green-500/35 ease-in-out" onClick={() => setShowEnqueueConfirm(true)}>
 							Add Person
 						</button>
 					
-						<button className="basis-full px-2 py-2 max-w-max rounded-lg outline outline-zinc-800 bg-red-500/30 hover:bg-red-500/35 ease-in-out" onClick={dequeueButtonAction}>
+						<button className="basis-full px-2 py-2 max-w-max rounded-lg outline outline-zinc-800 bg-red-500/30 hover:bg-red-500/35 ease-in-out" onClick={() => setShowDequeueConfirm(true)}>
 							Call Person
 						</button>
 					</div>

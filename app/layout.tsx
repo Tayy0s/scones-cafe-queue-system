@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Google_Sans, Google_Sans_Code } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,9 +12,19 @@ const geistMono = Geist_Mono({
     subsets: ["latin"],
 });
 
+const googleSans = Google_Sans({
+    variable: "--font-google-sans",
+    subsets: ["latin"],
+});
+
+const googleSansCode = Google_Sans_Code({
+    variable: "--font-google-sans-code",
+    subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
-    title: "Escape Room Cafe Queue",
-    description: "Scones Cafe Queue Website",
+    title: "Escape Room Queue",
+    description: "Scones Escape Room Queue Website",
 };
 
 export default function RootLayout({
@@ -25,7 +35,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body
-                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${googleSans.className} ${geistSans.variable} ${geistMono.variable} antialiased`}
             >
                 {children}
             </body>

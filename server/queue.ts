@@ -42,35 +42,6 @@ export class Queue {
         return await redis.llen(`${this.redisPrefix}entries_uuid`) ?? 0;
     }
 
-    async dequeue(uuid: string) : Promise<QueueEntry | undefined> {
-        const rp = this.redisPrefix;
-
-        try {
-            const pos = await redis.lpos(`$${rp}entries_uuid`, uuid);
-            if (pos === null)
-                return undefined;
-
-            const dateNullable: string | null = await redis.lindex(`${rp}entries_date`, pos);
-            if (dateNullable === null)
-                console.warn("WARN: UUIDs and Dates list length mismatch!");
-
-            let date = dateNullable ?? "";
-            
-            await redis.lrem(`${rp}entries_uuid`, 1, uuid);
-            await redis.lrem(`${rp}entries_date`, 1, date);
-            await redis.rpush(`${rp}pastEntries_uuid`, uuid);
-            await redis.rpush(`${rp}pastEntries_date`, date);
-            
-            return {
-                uuid: uuid,
-                time_added: date ?? ""
-            };
-        } catch (e) {
-            console.error(`Failed to dequeue ${uuid}`);
-            console.error(e);
-            return undefined;
-        }
-    }
 
     async get(uuid: string) : Promise<QueueEntry | undefined> {
         const rp = this.redisPrefix;
@@ -92,7 +63,7 @@ export class Queue {
     }
 
 
-    async dequeueFirst() : Promise<QueueEntry | undefined> {
+    async dequeue() : Promise<QueueEntry | undefined> {
         const rp = this.redisPrefix;
 
         try {
@@ -114,6 +85,7 @@ export class Queue {
         }
     }
 
+    
     async getFirst() : Promise<QueueEntry | undefined> {
         try {
             return await redis.lindex(`${this.redisPrefix}entries_uuid`, 0) ?? undefined;
@@ -182,13 +154,6 @@ export class UniqueQueueArray {
         return await this.queues[room].enqueue(uuid);
     }
 
-    async dequeue(uuid: string) : Promise<QueueEntry | undefined> {
-        let queue = await this.getQueueContainingUuid(uuid);
-
-        if (queue !== undefined)
-            return await queue.dequeue(uuid);
-    }
-
     async get(uuid: string) : Promise<QueueEntry | undefined> {
         for (let i = 0; i < this.queues.length; i++) {
             let possibleEntry = await this.queues[i].get(uuid);
@@ -198,12 +163,12 @@ export class UniqueQueueArray {
         }
     }
 
-    async dequeueFirst(room: number) : Promise<QueueEntry | undefined> {
+    async dequeue(room: number) : Promise<QueueEntry | undefined> {
         room = Math.floor(room);
         if (room < 0 || room >= this.queues.length)
             return undefined;
 
-        return await this.queues[room].dequeueFirst();
+        return await this.queues[room].dequeue();
     }
 
     async getFirst(room: number) : Promise<QueueEntry | undefined> {
@@ -218,5 +183,5 @@ export class UniqueQueueArray {
 // TODO: turn 3 into a configured variable. maybe roomsconfig.json or something.
 // since this file is only about queues, maybe extract the singleton into another file
 // which also handles loading from a file
-let singletonQueues = new UniqueQueueArray("", 3);
-export { singletonQueues };
+let Queues = new UniqueQueueArray("", 3);
+export { Queues };

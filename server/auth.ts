@@ -13,7 +13,7 @@ function generatePasswordHash(password: string, salt: string) : string{
             .digest("hex");
 }
 
-export class AdminAuth {
+export class Auth {
     redisPrefix: string;
 
     constructor(redisPrefix: string = "") {
@@ -54,4 +54,5 @@ export class AdminAuth {
 
 };
 
-export const adminAuthSingleton = new AdminAuth();
+const AuthSingleton = new Auth();
+export { AuthSingleton };

@@ -1,14 +1,17 @@
 import Client from "./Client"
 
-import { QueueStatus, singletonQueues } from "@/server/queue";
 import { redirect, notFound } from "next/navigation";
-import NotFound from "@/components/NotFound";
 import { cookies } from "next/headers";
+
+import { QueueStatus, Queues } from "@/server/queue";
+
+import NotFound from "@/components/NotFound";
 import LightPillar from "@/components/LightPillar";
+import Footer from "@/components/Footer";
 
 export default async function Queue({ searchParams, params } : { searchParams: Promise<{ set_cookie?: boolean, roomName: string }>, params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
-    const uuidQueueStatus = await (await singletonQueues.getQueueContainingUuid(uuid))?.getQueueStatus(uuid);
+    const uuidQueueStatus = await (await Queues.getQueueContainingUuid(uuid))?.getQueueStatus(uuid);
     
     const { set_cookie: setCookie, roomName } = await searchParams;
 
@@ -22,8 +25,11 @@ export default async function Queue({ searchParams, params } : { searchParams: P
             });
         }
         return (
-            <div suppressHydrationWarning> 
-                <Client uuid={uuid} roomName={roomName} initialQueueStatus={uuidQueueStatus.status} isAdmin={cookieStore.has("auth_token")} />
+            <div suppressHydrationWarning className="flex flex-col min-h-screen min-w-80 justify-between"> 
+                <div className="grow content-center">
+                    <Client uuid={uuid} roomName={roomName} initialQueueStatus={uuidQueueStatus.status} isAdmin={cookieStore.has("auth_token")} />
+                </div>
+                <Footer />
                 <div className="w-max h-max">
                     <LightPillar
                         topColor="#5227FF"
@@ -33,11 +39,12 @@ export default async function Queue({ searchParams, params } : { searchParams: P
                         glowAmount={0.002}
                         pillarWidth={3}
                         pillarHeight={0.4}
-                        noiseIntensity={0.5}
-                        pillarRotation={25}
+                        noiseIntensity={0}
+                        pillarRotation={30}
                         interactive={false}
                         mixBlendMode="screen"
                         quality="high"
+                        className="fixed"
                     />
                 </div>
             </div>

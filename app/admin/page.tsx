@@ -1,17 +1,16 @@
 import AdminClientPage from "./ClientPage";
-import { adminAuthSingleton } from "@/server/adminAuth";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { singletonQueues } from "@/server/queue"
+import { Queues } from "@/server/queue"
+import Footer from "@/components/Footer";
 
 export default async function AdminPage() {
-	let lengths = await Promise.all(singletonQueues.queues.map(q => q.length()));
+	let lengths = await Promise.all(Queues.queues.map(q => q.length()));
     return (
-        <>
+        <div className="flex flex-col min-h-screen min-w-80 justify-between">        
             <AdminClientPage
-				numRooms={singletonQueues.queues.length}
+				numRooms={Queues.queues.length}
 				initialQueueLengths={lengths}
 			/>
-        </>
+            <Footer />
+        </div>
     );
 }

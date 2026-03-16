@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { adminAuthSingleton } from "@/server/adminAuth";
+import { AuthSingleton } from "@/server/auth";
 
 let proxy_count = 0;
 
@@ -10,14 +10,14 @@ export async function proxy(request: NextRequest) {
     // TODO: put in matcher
     if (request.nextUrl.pathname == "/admin") {
         let auth_token = request.cookies.get("auth_token")?.value;
-        if (auth_token === undefined || !(await adminAuthSingleton.isSessionAuthorized(auth_token))) {
+        if (auth_token === undefined || !(await AuthSingleton.isSessionAuthorized(auth_token))) {
             const newUrl = request.nextUrl.clone();
             newUrl.pathname = "/login"
             return NextResponse.redirect(newUrl);
         }
     } else if (request.nextUrl.pathname == "/login") {
         let auth_token = request.cookies.get("auth_token")?.value;
-        if (auth_token !== undefined && (await adminAuthSingleton.isSessionAuthorized(auth_token))) {
+        if (auth_token !== undefined && (await AuthSingleton.isSessionAuthorized(auth_token))) {
             const newUrl = request.nextUrl.clone();
             newUrl.pathname = "/admin"
             return NextResponse.redirect(newUrl);

@@ -1,9 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import { redirect, RedirectType } from 'next/navigation'
 import { cookies } from 'next/headers';
-import { adminAuthSingleton } from "@/server/adminAuth";
-
-import crypto from 'node:crypto';
+import { AuthSingleton } from "@/server/auth";
 
 export async function POST(request: NextRequest) {
     const formData = await request.formData();
@@ -13,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (username === undefined || password === undefined)
         return NextResponse.json({ success: false, messsage: "Bad Request" }, { status: 400 })
 
-    const authToken = await adminAuthSingleton.tryLogin(username, password);
+    const authToken = await AuthSingleton.tryLogin(username, password);
     if (authToken !== undefined) {
         const twodays = 2 * 86400 * 1000;
         (await cookies()).set("auth_token", authToken, {
