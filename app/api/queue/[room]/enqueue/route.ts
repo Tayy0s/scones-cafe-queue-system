@@ -1,14 +1,15 @@
 import { NextResponse, NextRequest } from "next/server";
-import { Queues, QueueEntry } from "@/server/queue";
+import { secretSupabase } from "@/server/secret-supabase";
 import { AuthSingleton } from "@/server/auth";
+import { rooms } from "@/server/rooms.json"
 
-export async function POST(request: NextRequest, { params } : { params: Promise<{ queueId: string }> }) {
-    const { queueId }: { queueId: string } = await params;
-    const queueNum: number = parseInt(queueId);
-    if (isNaN(queueNum) || queueNum < 0 || queueNum >= Queues.queues.length) {
+export async function POST(request: NextRequest, { params } : { params: Promise<{ room: string }> }) {
+    const { room }: { room: string } = await params;
+    const roomNum: number = parseInt(room);
+    if (isNaN(roomNum) || roomNum < 0 || roomNum >= rooms.length) {
         return NextResponse.json({
             success: false,
-            message: "Invalid parameter: queueId"
+            message: "Invalid parameter: room"
         }, { status: 404 });
     }
 
@@ -20,11 +21,11 @@ export async function POST(request: NextRequest, { params } : { params: Promise<
         }, { status: 403 });
     }
 
-    const data: QueueEntry | undefined = await Queues.enqueue(queueNum);
-    if (data == undefined) {
+    const { data, error } = await secretSupabase.rpc("enqueue", { room: roomNum });
+    if (error) {
         return NextResponse.json({
             success: false,
-            message: "Internal Server Error"
+            message: error
         }, { status: 500 });
     }
 

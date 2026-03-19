@@ -1,9 +1,9 @@
 import { NextResponse, NextRequest } from "next/server";
-import { Queues } from "@/server/queue";
+import { rooms } from "@/server/rooms.json";
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{[key: string]: string}> }): Promise<NextResponse> {
+export function GET(request: NextRequest): NextResponse {
     return NextResponse.json({
         success: true,
-        data: await Promise.all(Queues.queues.map(q => q.length()))
+        data: rooms.length
     });
 }

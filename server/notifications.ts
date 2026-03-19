@@ -2,12 +2,12 @@ import { redis } from "./redis"
 
 const subscriptions = new Map<string, PushSubscriptionJSON>();
 
-export function saveSubscription(sub: PushSubscriptionJSON) {
-  if (sub.endpoint) redis.set(sub.endpoint, sub);
+export function saveSubscription(uuid: string, sub: PushSubscriptionJSON) {
+  if (sub.endpoint) redis.set(`subscription_${uuid}`, sub);
 }
 
-export function removeSubscription(endpoint: string) {
-    redis.del(endpoint);
+export function removeSubscription(uuid: string) {
+    redis.del(`subscription_${uuid}`);
 }
 
 export async function sendPushNotification() {

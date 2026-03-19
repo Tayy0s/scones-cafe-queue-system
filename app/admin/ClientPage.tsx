@@ -1,30 +1,12 @@
 'use client';
 
 
-import { QueueEntry, QueueStatus } from '@/server/queue';
-import { useRef, useEffect, useState, ReactNode } from 'react';
+import { QueueEntry } from '@/server/queue';
+import { useEffect, useState } from 'react';
+import { clientSupabase } from '@/server/client-supabase';
 import LogoutIcon from '@/components/LogoutIcon';
 import Modal from "@/components/Modal";
-
-type Room = {
-	title: string,
-	imageUrl: string
-}
-
-const rooms: Room[] = [
-	{
-		title: "Museum Heist 🎨", 
-		imageUrl: "/images/placeholder.png"
-	},
-	{
-		title: "Amongst Us in Space 🚀", 
-		imageUrl: "/images/placeholder.png"
-	},
-	{
-		title: "Who Cracked Dumpty? 🥚",
-		imageUrl: "/images/placeholder.png"
-	},
-]
+import { rooms } from "@/server/rooms.json";
 
 function multiple(generator: (index: number) => React.ReactNode, count: number) {
 	let ret: React.ReactNode[] = []
@@ -39,20 +21,6 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 	const [showEnqueueConfirm, setShowEnqueueConfirm] = useState(false);
 	const [showDequeueConfirm, setShowDequeueConfirm] = useState(false);
 
-	if (queueLength == -1) {
-		fetch(`/api/queue/${room}/length`).then(async v => {
-			const { success, data } : { success: boolean, data?: number } = await v.json();
-			if (success == true) {
-				if (data == undefined)
-					console.warn(`Received no data from fetching queue length for queue ${room}`);
-					
-				setQueueLength(data ?? 0);
-			} else {
-				console.error(`Unsuccessful GET /api/queue/${room}/length`);
-			}
-		});
-	}
-
 	const enqueueButtonAction = async () => {
 		const result = await fetch(`/api/queue/${room}/enqueue`, {
 			method: "POST",
@@ -60,31 +28,55 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 
 		const json: { success: boolean, message?: string, data?: QueueEntry } = await result.json();
 		
-		if (json.success) {
-			setQueueLength(n => n + 1);
-		}
-
-		alert(JSON.stringify(json, undefined, 4));
-		
 		if (json.data != undefined) // Redirect to queue qr code for customers to scan
-			window.location.href = window.location.href.substring(0, -5) + `queue/${json.data?.uuid}?roomName=${rooms[room].title}`;
+			window.location.href = window.location.href.substring(0, -5) + `queue/${json.data?.id}?room=${room}`;
 	};
 
 	const dequeueButtonAction = async () => {
 		const result = await fetch(`/api/queue/${room}/dequeue`, {
 			method: "POST",
 		});
-
-		const json: { success: boolean, message?: string, data?: QueueStatus } = await result.json();
-		
-		if (json.success) {
-			setQueueLength(n => n - 1);
-		}
-
-		alert(JSON.stringify(json, undefined, 4));
 	};
 
+	useEffect(() => {
+		if (queueLength == -1) {
+			fetch(`/api/queue/${room}/length`).then(async v => {
+				const { success, data } : { success: boolean, data?: number } = await v.json();
+				if (success == true) {
+					if (data == undefined)
+						console.warn(`Received no data from fetching queue length for queue ${room}`);
+						
+					setQueueLength(data ?? 0);
+				} else {
+					console.error(`Unsuccessful GET /api/queue/${room}/length`);
+				}
+			});
+		}
+	}, []);
 
+	useEffect(() => {
+		(async () => {
+
+			await clientSupabase.realtime.setAuth();
+			clientSupabase.realtime.channel("topic:queues", { config: { private: true } })
+				.on("broadcast", { event: "INSERT" }, event => {
+					console.log(event);
+					if (event.payload.record.queue == room)
+						setQueueLength(l => l + 1);
+				})
+				.on("broadcast", { event: "UPDATE" }, event => {
+					console.log(event);
+					const OLD = event.payload.old_record;
+					const NEW = event.payload.record;
+					if (OLD.queue == room && NEW.queue == room && OLD.served == false && NEW.served == true)
+						setQueueLength(l => l - 1);
+				})
+				.subscribe(status => {
+					console.log(`New listen state for ${room}: ${status}`)
+				})
+
+		})();
+	}, []);
 
 	return (
 		<div className="w-full flex justify-center">
@@ -102,7 +94,7 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 				<div className="w-full flex items-center justify-between gap-4">
 					
 					<h1 className="basis-0 grow font-bold text-2xl leading-none">
-						{rooms[room].title}
+						{rooms[room].name}
 					</h1>
 					
 					<div className="flex gap-4 max-w-max">
@@ -121,7 +113,7 @@ function AdminCard({ room, initialQueueLength }: { room: number, initialQueueLen
 	);
 }
 
-export default function AdminClientPage({ numRooms, initialQueueLengths }: { numRooms: number, initialQueueLengths: number[] }) {
+export default function AdminClientPage() {
 	return (
 		<div className="flex flex-col gap-2 m-2">
 			<div className='flex flex-row justify-between'>
@@ -137,9 +129,8 @@ export default function AdminClientPage({ numRooms, initialQueueLengths }: { num
 						<AdminCard
 							key={index}
 							room={index}
-							initialQueueLength={initialQueueLengths[index]}
 						/>
-					 ), numRooms)}
+					 ), rooms.length)}
 				</section>
 
 			</div>

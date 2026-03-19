@@ -2,8 +2,8 @@ self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
  
 self.addEventListener('push', () => {
-  self.registration.showNotification('🔔 App Notification', {
-    body: 'Something just happened on the server!',
+  self.registration.showNotification('Scones Queue System', {
+    body: 'Your Queue Number has been Called!',
     icon: '/favicon.ico',
     badge: '/favicon.ico',
     tag: 'server-alert',

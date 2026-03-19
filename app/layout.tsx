@@ -15,16 +15,6 @@ const geistMono = Geist_Mono({
     adjustFontFallback: false
 });
 
-const googleSans = Google_Sans({
-    variable: "--font-google-sans",
-    adjustFontFallback: false
-});
-
-const googleSansCode = Google_Sans_Code({
-    variable: "--font-google-sans-code",
-    adjustFontFallback: false
-});
-
 export const metadata: Metadata = {
     title: "Escape Room Queue",
     description: "Scones Escape Room Queue Website",
@@ -41,7 +31,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body
-                className={`${googleSans.className} ${googleSans.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
+                className={`${geistSans.className} ${geistMono.variable} antialiased`}
             >
                 {children}
             </body>

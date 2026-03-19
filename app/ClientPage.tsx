@@ -3,7 +3,6 @@
 import localFont from "next/font/local";
 import Card from "@/components/Card";
 import { useState } from "react"
-import { QueueStatus } from "@/server/queue"
 
 export const Pusab = localFont({
     variable: "--my-pusab",
@@ -37,19 +36,9 @@ const rooms: Room[] = [
     }, // TODO: Ask lim for escape room image
 ]
 
-function QueueStatusBar() {
-    const [queueStatus, setQueueStatus] = useState({ status: QueueStatus.NOT_IN_QUEUE });
-
-    return (
-        <></>
-    )
-}
-
 export default function ClientHome({ inQueue } : { inQueue?: boolean }) {
     return (
         <div className="grow pb-8 justify-center decoration-amber-50 pt-8 px-4">
-            { inQueue && <QueueStatusBar /> }
-
             <h1 className="text-center text-4xl mb-20 text-shadow-xl font-bold">
                 Select an Escape Room
             </h1>
